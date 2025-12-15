@@ -1,0 +1,8 @@
+[package]
+name = "ruvm32"
+version = "0.1.0"
+edition = "2024"
+authors = ["Yangosoft"]
+repository = "https://github.com/yangosoft/ruvm32"
+
+[dependencies]
