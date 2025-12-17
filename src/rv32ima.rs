@@ -3,7 +3,7 @@ pub const MINI_RV32_RAM_SIZE: u32 = 0x00100000; // 1 MiB
 pub const UVM32_MEMORY_SIZE: u32 = 65536; // 64 KiB
 pub const UVM32_SYSCALL_HALT: u32 = 0x1000000;
 
-fn MINIRV32_LOAD4(ofs: u32, image: &[u8]) -> u32 {
+fn minirv32_load4(ofs: u32, image: &[u8]) -> u32 {
     let offset = ofs as usize;
 
     // Get 4 bytes from image at offset
@@ -16,19 +16,19 @@ fn MINIRV32_LOAD4(ofs: u32, image: &[u8]) -> u32 {
     return ret;
 }
 
-fn MINIRV32_LOAD1_SIGNED(ofs: u32, image: &[u8]) -> i8 {
+fn minirv32_load1_signed(ofs: u32, image: &[u8]) -> i8 {
     let offset = ofs as usize;
     let byte = image[offset] as i8;
     return byte;
 }
 
-fn MINIRV32_LOAD1(ofs: u32, image: &[u8]) -> u8 {
+fn minirv32_load1(ofs: u32, image: &[u8]) -> u8 {
     let offset = ofs as usize;
     let byte = image[offset] as u8;
     return byte;
 }
 
-fn MINIRV32_LOAD2(ofs: u32, image: &[u8]) -> u16 {
+fn minirv32_load2(ofs: u32, image: &[u8]) -> u16 {
     let offset = ofs as usize;
     let byte0 = image[offset] as u16;
     let byte1 = image[offset + 1] as u16;
@@ -36,7 +36,7 @@ fn MINIRV32_LOAD2(ofs: u32, image: &[u8]) -> u16 {
     return halfword;
 }
 
-fn MINIRV32_LOAD2_SIGNED(ofs: u32, image: &[u8]) -> i16 {
+fn minirv32_load2_signed(ofs: u32, image: &[u8]) -> i16 {
     let offset = ofs as usize;
     let byte0 = image[offset] as u16;
     let byte1 = image[offset + 1] as u16;
@@ -44,23 +44,23 @@ fn MINIRV32_LOAD2_SIGNED(ofs: u32, image: &[u8]) -> i16 {
     return halfword as i16;
 }
 
-fn MINIRV32_MMIO_RANGE(n: u32) -> bool {
+fn minirv32_mmio_range(n: u32) -> bool {
     // Example MMIO range check (to be customized as needed)
     0x10000000 <= n && n < 0x12000000
 }
 
-fn MINIRV32_STORE1(ofs: u32, val: u8, image: &mut [u8]) {
+fn minirv32_store1(ofs: u32, val: u8, image: &mut [u8]) {
     let offset = ofs as usize;
     image[offset] = (val & 0xff) as u8;
 }
 
-fn MINIRV32_STORE2(ofs: u32, val: u16, image: &mut [u8]) {
+fn minirv32_store2(ofs: u32, val: u16, image: &mut [u8]) {
     let offset = ofs as usize;
     image[offset] = (val & 0xff) as u8;
     image[offset + 1] = ((val >> 8) & 0xff) as u8;
 }
 
-fn MINIRV32_STORE4(ofs: u32, val: u32, image: &mut [u8]) {
+fn minirv32_store4(ofs: u32, val: u32, image: &mut [u8]) {
     let offset = ofs as usize;
     image[offset] = (val & 0xff) as u8;
     image[offset + 1] = ((val >> 8) & 0xff) as u8;
@@ -121,13 +121,13 @@ impl MiniRV32IMAState {
         self.pc
     }
 
-    pub fn step(&mut self, image: &mut [u8], vProcAddress: u32, count: i32) -> i32 {
+    pub fn step(&mut self, image: &mut [u8], _v_proc_address: u32, count: i32) -> i32 {
         let mut trap: u32 = 0;
-        let mut rval: u32 = 0;
+        let mut rval: u32;
         let mut pc: u32 = self.pc;
 
-        for icount in 0..count {
-            let mut ir: u32 = 0;
+        for _icount in 0..count {
+            let ir: u32;
             rval = 0;
 
             let ofs_pc: u32 = pc - MINIRV32_RAM_IMAGE_OFFSET;
@@ -139,7 +139,7 @@ impl MiniRV32IMAState {
                 trap = 1 + 0; //Handle PC-misaligned access
                 break;
             } else {
-                ir = MINIRV32_LOAD4(ofs_pc, image);
+                ir = minirv32_load4(ofs_pc, image);
                 let mut rdid: u32 = (ir >> 7) & 0x1f;
 
                 match ir & 0x7f {
@@ -203,7 +203,7 @@ impl MiniRV32IMAState {
                         immm4 = pc.wrapping_add(immm4).wrapping_sub(4);
 
                         rdid = 0;
-                        match ((ir >> 12) & 0x7) {
+                        match (ir >> 12) & 0x7 {
                             // BEQ, BNE, BLT, BGE, BLTU, BGEU
                             0 => {
                                 if rs1 == rs2 {
@@ -236,7 +236,7 @@ impl MiniRV32IMAState {
                                 }
                             } //BGEU
                             _ => {
-                                trap = (2 + 1);
+                                trap = 2 + 1;
                             }
                         }
                     }
@@ -244,7 +244,6 @@ impl MiniRV32IMAState {
                     0x03 => {
                         // Load (0b0000011)
                         let reg_idx1 = (ir >> 15) & 0x1f;
-                        break;
                         let rs1: u32 = self.regs[reg_idx1 as usize];
                         let imm: u32 = ir >> 20;
                         let imm_se: u32 = if (imm & 0x800) != 0 {
@@ -256,7 +255,7 @@ impl MiniRV32IMAState {
                         rsval = rsval.wrapping_sub(MINIRV32_RAM_IMAGE_OFFSET);
                         if rsval >= MINI_RV32_RAM_SIZE - 3 {
                             rsval = rsval.wrapping_add(MINIRV32_RAM_IMAGE_OFFSET);
-                            if MINIRV32_MMIO_RANGE(rsval)
+                            if minirv32_mmio_range(rsval)
                             // UART, CLNT
                             {
                                 todo!("Peding to do memory-mapped I/O handling");
@@ -269,19 +268,19 @@ impl MiniRV32IMAState {
                             match (ir >> 12) & 0x7 {
                                 //LB, LH, LW, LBU, LHU
                                 0 => {
-                                    rval = MINIRV32_LOAD1_SIGNED(rsval, image) as u32;
+                                    rval = minirv32_load1_signed(rsval, image) as u32;
                                 }
                                 1 => {
-                                    rval = MINIRV32_LOAD2_SIGNED(rsval, image) as u32;
+                                    rval = minirv32_load2_signed(rsval, image) as u32;
                                 }
                                 2 => {
-                                    rval = MINIRV32_LOAD4(rsval, image) as u32;
+                                    rval = minirv32_load4(rsval, image) as u32;
                                 }
                                 4 => {
-                                    rval = MINIRV32_LOAD1(rsval, image) as u32;
+                                    rval = minirv32_load1(rsval, image) as u32;
                                 }
                                 5 => {
-                                    rval = MINIRV32_LOAD2(rsval, image) as u32;
+                                    rval = minirv32_load2(rsval, image) as u32;
                                 }
                                 _ => {
                                     trap = 2 + 1;
@@ -307,7 +306,7 @@ impl MiniRV32IMAState {
 
                         if addy >= MINI_RV32_RAM_SIZE - 3 {
                             addy += MINIRV32_RAM_IMAGE_OFFSET;
-                            if MINIRV32_MMIO_RANGE(addy) {
+                            if minirv32_mmio_range(addy) {
                                 todo!("Peding to do memory-mapped I/O handling");
                                 //MINIRV32_HANDLE_MEM_STORE_CONTROL( addy, rs2 );
                             } else {
@@ -317,9 +316,9 @@ impl MiniRV32IMAState {
                         } else {
                             match (ir >> 12) & 0x7 {
                                 //SB, SH, SW
-                                0 => MINIRV32_STORE1(addy, rs2 as u8, image),
-                                1 => MINIRV32_STORE2(addy, rs2 as u16, image),
-                                2 => MINIRV32_STORE4(addy, rs2 as u32, image),
+                                0 => minirv32_store1(addy, rs2 as u8, image),
+                                1 => minirv32_store2(addy, rs2 as u16, image),
+                                2 => minirv32_store4(addy, rs2 as u32, image),
                                 _ => trap = 2 + 1,
                             }
                         }
@@ -354,11 +353,11 @@ impl MiniRV32IMAState {
                                     // MULH
                                 }
                                 2 => {
-                                    rval = (((rs1 as i32).wrapping_div(rs2 as i32)) as u32);
+                                    rval = ((rs1 as i32).wrapping_div(rs2 as i32)) as u32;
                                     // MULHSU
                                 }
                                 3 => {
-                                    rval = (((rs1 as u32).wrapping_div(rs2 as u32)) as u32);
+                                    rval = ((rs1 as u32).wrapping_div(rs2 as u32)) as u32;
                                     // MULHU
                                 }
                                 4 => {
@@ -452,29 +451,27 @@ impl MiniRV32IMAState {
                                     rval = self.mtvec;
                                 }
                                 0x304 => {
-                                    rval = self.mepc;
-                                }
-                                0x341 => {
                                     rval = self.mie;
                                 }
-                                0x342 => {
-                                    rval = self.mip;
+                                0x341 => {
+                                    rval = self.mepc;
                                 }
-                                0x343 => {
-                                    rval = self.mcause;
+                                0x344 => {
+                                    rval = self.mip;
                                 }
                                 0x343 => {
                                     rval = self.mtval;
                                 }
                                 0xf11 => {
+                                    //vendor id
                                     rval = 0xff0ff0ff;
-                                    //mvendorid
                                 }
                                 0x301 => {
                                     rval = 0x40401101;
                                     //misa (XLEN=32, IMA+X)
                                 }
                                 _ => {
+                                    // MINIRV32_OTHERCSR_READ( csrno, rval );
                                     todo!("CSR not implemented: {:#x}", csrno);
                                 }
                             }
@@ -570,8 +567,7 @@ impl MiniRV32IMAState {
                                     }
 
                                     1 => {
-                                        trap = (3 + 1);
-
+                                        trap = 3 + 1;
                                         // EBREAK 3 = "Breakpoint"
                                     }
 
@@ -584,7 +580,7 @@ impl MiniRV32IMAState {
                                     }
 
                                     _ => {
-                                        trap = (2 + 1);
+                                        trap = 2 + 1;
                                     }
                                 }
                             }

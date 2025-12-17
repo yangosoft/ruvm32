@@ -4,7 +4,7 @@ mod rv32ima;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mut path = String::new();
+    let path: String;
     if args.len() < 2 {
         path = "/home/yango/proj/ruvm32/example_in_c/test1.bin".to_string()
     } else {
