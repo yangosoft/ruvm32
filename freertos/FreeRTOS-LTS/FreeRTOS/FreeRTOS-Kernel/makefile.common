@@ -1,0 +1,39 @@
+PREFIX:=riscv64-elf-
+OPT ?= -Os
+CFLAGS+=-I${TOPDIR}/common -I${TOPDIR}/apps/common
+CFLAGS+=${OPT} -fno-stack-protector -fno-builtin-memcpy -fno-builtin
+CFLAGS+=-static-libgcc -fdata-sections -ffunction-sections
+CFLAGS+=-g -march=rv32im -mabi=ilp32 -static
+LDFLAGS:= -T ${TOPDIR}/apps/common/linker.ld -nostdlib -Wl,--gc-sections
+LIBS:= -lgcc # needed for softfp
+
+PROJECT:=test1
+SRCS:=test1.c
+
+# check if the compiler is installed
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    PREFIX=riscv64-elf-
+    ifeq (,$(shell which ${PREFIX}gcc))
+        $(error "Try brew install riscv64-elf-gcc riscv64-elf-binutils")
+    endif
+else
+    PREFIX=riscv64-unknown-elf-
+    ifeq (,$(shell which ${PREFIX}gcc))
+        $(error "Try apt-get install gcc-riscv64-unknown-elf")
+    endif
+endif
+
+all_common:
+	${PREFIX}gcc -o ${PROJECT}.elf ${CFLAGS} ${LDFLAGS} ${SRCS} ${LIBS}
+	@$(PREFIX)objcopy ${PROJECT}.elf -O binary ${PROJECT}.bin
+
+disasm_common: all
+	$(PREFIX)objdump -S -d -f ${PROJECT}.elf
+
+test_common: all
+	${TOPDIR}/hosts/host/host ${HOST_EXTRA} ${PWD}/${PROJECT}.bin
+
+clean_common:
+	rm -f ${PROJECT}.o ${PROJECT}.elf ${PROJECT}.bin
+

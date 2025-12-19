@@ -121,6 +121,10 @@ impl MiniRV32IMAState {
         self.pc
     }
 
+    pub fn increment_pc(&mut self, delta: u32) {
+        self.pc = self.pc.wrapping_add(delta);
+    }
+
     pub fn step(&mut self, image: &mut [u8], _v_proc_address: u32, count: i32) -> i32 {
         let mut trap: u32 = 0;
         let mut rval: u32;
@@ -162,7 +166,7 @@ impl MiniRV32IMAState {
                             reladdy |= 0xffe00000; // Sign extension.
                         }
                         rval = pc + 4;
-                        pc = pc + (reladdy as u32) - 4;
+                        pc = pc.wrapping_add(reladdy as u32).wrapping_sub(4);
                     }
 
                     0x67 => {
@@ -301,7 +305,9 @@ impl MiniRV32IMAState {
                         if addy & 0x800 != 0 {
                             addy |= 0xfffff000;
                         }
-                        addy += rs1 - MINIRV32_RAM_IMAGE_OFFSET;
+                        // addy += rs1 - MINIRV32_RAM_IMAGE_OFFSET;
+                        addy = addy.wrapping_add(rs1);
+                        addy = addy.wrapping_sub(MINIRV32_RAM_IMAGE_OFFSET);
                         rdid = 0;
 
                         if addy >= MINI_RV32_RAM_SIZE - 3 {
@@ -386,7 +392,8 @@ impl MiniRV32IMAState {
                                     rval = if is_reg && (ir & 0x40000000) != 0 {
                                         rs1 - rs2
                                     } else {
-                                        rs1 + rs2
+                                        //ignore overflow
+                                        rs1.wrapping_add(rs2)
                                     };
                                     // ADD/SUB
                                 }
@@ -470,6 +477,10 @@ impl MiniRV32IMAState {
                                     rval = 0x40401101;
                                     //misa (XLEN=32, IMA+X)
                                 }
+                                0x300 => {
+                                    // Not sure!!!!!
+                                    rval = self.mstatus;
+                                }
                                 _ => {
                                     // MINIRV32_OTHERCSR_READ( csrno, rval );
                                     todo!("CSR not implemented: {:#x}", csrno);
@@ -535,9 +546,7 @@ impl MiniRV32IMAState {
                                     todo!("CSR not implemented: {:#x}", csrno);
                                 }
                             }
-                        }
-
-                        if microop == 0x0 {
+                        } else if microop == 0x0 {
                             // "SYSTEM" 0b000
                             rdid = 0;
 
@@ -584,6 +593,17 @@ impl MiniRV32IMAState {
                                     }
                                 }
                             }
+                        } else if microop == 0x2 {
+                            // Zifencei
+                            rdid = 0;
+                            match csrno {
+                                0x300 => {
+                                    rval = self.mstatus;
+                                }
+                                _ => {
+                                    trap = 2 + 2; // Illegal instruction
+                                }
+                            }
                         } else {
                             trap = 2 + 1;
                         }
@@ -611,7 +631,7 @@ impl MiniRV32IMAState {
 
             //MINIRV32_POSTEXEC( pc, ir, trap );
 
-            pc += 4;
+            pc = pc.wrapping_add(4);
         }
 
         if trap != 0 {

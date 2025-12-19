@@ -6,7 +6,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let path: String;
     if args.len() < 2 {
-        path = "/home/yango/proj/ruvm32/example_in_c/test1.bin".to_string()
+        path = "/home/yango/proj/ruvm32/freertos/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/test1.bin"
+            .to_string()
     } else {
         path = args[1].clone();
     }
@@ -23,6 +24,9 @@ fn main() {
         match ret {
             0 => {
                 println!("Stepped successfully to PC={:08x}", cpu.get_pc());
+                if cpu.get_pc() == 0x80000138 {
+                    println!("PING!!!!");
+                }
             }
             12 => {
                 /*
@@ -38,9 +42,14 @@ fn main() {
                         println!("SYSCALL HALT encountered at PC={:08x}", cpu.get_pc());
                         break;
                     }
+                    64 => {
+                        println!("TICK {:08x} at PC={:08x}", syscall, cpu.get_pc());
+                        cpu.increment_pc(4);
+                    }
                     _ => {
-                        println!("Unknown SYSCALL {} at PC={:08x}", syscall, cpu.get_pc());
-                        break;
+                        println!("Unknown SYSCALL {:08x} at PC={:08x}", syscall, cpu.get_pc());
+                        cpu.increment_pc(4);
+                        //break;
                     }
                 }
             }
