@@ -10,6 +10,7 @@
 
 
 void vPortSetupTimerInterrupt(void);
+void external_interrupt_handler( uint32_t cause );
 
 
 void vPortSetupTimerInterrupt()
@@ -17,9 +18,18 @@ void vPortSetupTimerInterrupt()
     // not implemented
 }
 
+void external_interrupt_handler( uint32_t cause )
+{
+     __asm__ volatile (
+            "li a7, 66\n\t"   // llamada al sistema 64, write
+            "ecall\n\t"
+        );
+}
+
 /*-----------------------------------------------------------*/
 
 static void exampleTask( void * parameters );
+static void exampleTask2( void * parameters );
 
 /*-----------------------------------------------------------*/
 
@@ -36,6 +46,24 @@ static void exampleTask( void * parameters )
             "li a7, 64\n\t"   // llamada al sistema 64, write
             "ecall\n\t"
         );
+        taskYIELD();
+    }
+}
+
+static void exampleTask2( void * parameters )
+{
+    /* Unused parameters. */
+    ( void ) parameters;
+
+    for( ; ; )
+    {
+        /* Example Task Code */
+        //vTaskDelay( 100 ); /* delay 100 ticks */
+        __asm__ volatile (
+            "li a7, 65\n\t"   // llamada al sistema 64, write
+            "ecall\n\t"
+        );
+        taskYIELD();
     }
 }
 /*-----------------------------------------------------------*/
@@ -44,6 +72,8 @@ void main( void )
 {
     static StaticTask_t exampleTaskTCB;
     static StackType_t exampleTaskStack[ configMINIMAL_STACK_SIZE ];
+    static StaticTask_t exampleTaskTCB2;
+    static StackType_t exampleTaskStack2[ configMINIMAL_STACK_SIZE ];
 
     //( void ) printf( "Example FreeRTOS Project\n" );
 
@@ -54,6 +84,14 @@ void main( void )
                                 configMAX_PRIORITIES - 1U,
                                 &( exampleTaskStack[ 0 ] ),
                                 &( exampleTaskTCB ) );
+
+    ( void ) xTaskCreateStatic( exampleTask2,
+                                "example2",
+                                configMINIMAL_STACK_SIZE,
+                                NULL,
+                                configMAX_PRIORITIES - 2U,
+                                &( exampleTaskStack2[ 0 ] ),
+                                &( exampleTaskTCB2 ) );
 
     /* Start the scheduler. */
     vTaskStartScheduler();

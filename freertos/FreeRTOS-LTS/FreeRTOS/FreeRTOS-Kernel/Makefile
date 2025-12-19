@@ -3,7 +3,7 @@ OPT ?= -Os
 CFLAGS+=-I. -I./include -I./portable/GCC/RISC-V/ -I./portable\GCC\RISC-V-RV32\chip_specific_extensions\RV32I_CLINT_no_extensions -I./portable/GCC/RISC-V/chip_specific_extensions/RISCV_no_extensions/
 CFLAGS+=${OPT} -fno-stack-protector -fno-builtin-memcpy -fno-builtin
 CFLAGS+=-static-libgcc -fdata-sections -ffunction-sections
-CFLAGS+=-g -march=rv32im_zicsr -mabi=ilp32 -static
+CFLAGS+=-g -march=rv32im_zicsr -mabi=ilp32 -static -DportasmHANDLE_INTERRUPT=external_interrupt_handler
 LDFLAGS:= -T linker.ld -nostdlib -Wl,--gc-sections
 LIBS:= -lgcc # needed for softfp
 # rv32imc_zicsr
@@ -44,6 +44,6 @@ disasm_common: ${PROJECT}.elf
 test_common: all
 	${TOPDIR}/hosts/host/host ${HOST_EXTRA} ${PWD}/${PROJECT}.bin
 
-clean_common:
+clean:
 	rm -f ${PROJECT}.o ${PROJECT}.elf ${PROJECT}.bin
 

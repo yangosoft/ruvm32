@@ -3,7 +3,7 @@ OPT ?= -Os
 CFLAGS+=-I.
 CFLAGS+=${OPT} -fno-stack-protector -fno-builtin-memcpy -fno-builtin
 CFLAGS+=-static-libgcc -fdata-sections -ffunction-sections
-CFLAGS+=-g -march=rv32im -mabi=ilp32 -static
+CFLAGS+=-g -march=rv32im_zicsr -mabi=ilp32 -static
 LDFLAGS:= -T linker.ld -nostdlib -Wl,--gc-sections
 LIBS:= -lgcc # needed for softfp
 

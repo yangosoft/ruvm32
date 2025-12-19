@@ -121,6 +121,10 @@ impl MiniRV32IMAState {
         self.pc
     }
 
+    pub fn get_mvtec(&self) -> u32 {
+        self.mtvec
+    }
+
     pub fn increment_pc(&mut self, delta: u32) {
         self.pc = self.pc.wrapping_add(delta);
     }
@@ -451,35 +455,41 @@ impl MiniRV32IMAState {
                             let rs1 = self.regs[rs1imm as usize];
                             let mut writeval = rs1;
                             match csrno {
-                                0x340 => {
-                                    rval = self.mscratch;
-                                }
-                                0x305 => {
-                                    rval = self.mtvec;
-                                }
-                                0x304 => {
-                                    rval = self.mie;
-                                }
-                                0x341 => {
-                                    rval = self.mepc;
-                                }
-                                0x344 => {
-                                    rval = self.mip;
-                                }
-                                0x343 => {
-                                    rval = self.mtval;
-                                }
-                                0xf11 => {
-                                    //vendor id
-                                    rval = 0xff0ff0ff;
+                                0x300 => {
+                                    rval = self.mstatus;
                                 }
                                 0x301 => {
                                     rval = 0x40401101;
                                     //misa (XLEN=32, IMA+X)
                                 }
-                                0x300 => {
-                                    // Not sure!!!!!
-                                    rval = self.mstatus;
+                                0x304 => {
+                                    rval = self.mie;
+                                }
+                                0x305 => {
+                                    rval = self.mtvec;
+                                }
+                                0x340 => {
+                                    rval = self.mscratch;
+                                }
+                                0x341 => {
+                                    rval = self.mepc;
+                                }
+                                0x342 => {
+                                    rval = self.mcause;
+                                }
+                                0x343 => {
+                                    rval = self.mtval;
+                                }
+                                0x344 => {
+                                    rval = self.mip;
+                                }
+                                0xC00 => {
+                                    //rval = self.cycle;
+                                    todo!("CSR not implemented: {:#x}", csrno);
+                                }
+                                0xf11 => {
+                                    //vendor id
+                                    rval = 0xff0ff0ff;
                                 }
                                 _ => {
                                     // MINIRV32_OTHERCSR_READ( csrno, rval );
@@ -584,7 +594,7 @@ impl MiniRV32IMAState {
                                         //WFI (Wait for interrupts)
                                         self.mstatus |= 8; //Enable interrupts
                                         self.extraflags |= 4; //Infor environment we want to go to sleep.
-                                        self.pc = self.pc + 4;
+                                        self.pc = self.pc.wrapping_add(4);
                                         return 1;
                                     }
 

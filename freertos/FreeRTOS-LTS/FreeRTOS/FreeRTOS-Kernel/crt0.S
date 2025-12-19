@@ -14,6 +14,11 @@ _start:
 # li a7, uvm32_syscall_stackprotect
 # ecall
 
+# TODO change 0xAA for the rigth address of the PC 
+# 0x305 writes into mvtec
+li t1, 0xAA
+csrw 0x305, t1      # Zicsr extension
+
 # sp is already setup by vm
 sw	ra,12(sp)
 jal	ra, main

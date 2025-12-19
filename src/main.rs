@@ -6,8 +6,9 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let path: String;
     if args.len() < 2 {
-        path = "/home/yango/proj/ruvm32/freertos/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/test1.bin"
-            .to_string()
+        //path = "/home/yango/proj/ruvm32/freertos/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/test1.bin"
+        //    .to_string()
+        path = "/home/yango/proj/ruvm32/example_in_c/test1.bin".to_string()
     } else {
         path = args[1].clone();
     }
@@ -43,13 +44,31 @@ fn main() {
                         break;
                     }
                     64 => {
-                        println!("TICK {:08x} at PC={:08x}", syscall, cpu.get_pc());
+                        println!("TICK1 {:08x} at PC={:08x}", syscall, cpu.get_pc());
+                        let mvtec = cpu.get_mvtec();
+                        println!(" mtvec = {:08x}", mvtec);
+
                         cpu.increment_pc(4);
+                        //break;
+                    }
+                    65 => {
+                        println!("TICK2 {:08x} at PC={:08x}", syscall, cpu.get_pc());
+                        cpu.increment_pc(4);
+                        //break;
+                    }
+                    66 => {
+                        println!(
+                            "External interrupt handler {:08x} at PC={:08x}",
+                            syscall,
+                            cpu.get_pc()
+                        );
+                        cpu.increment_pc(4);
+                        //break;
                     }
                     _ => {
                         println!("Unknown SYSCALL {:08x} at PC={:08x}", syscall, cpu.get_pc());
                         cpu.increment_pc(4);
-                        //break;
+                        break;
                     }
                 }
             }

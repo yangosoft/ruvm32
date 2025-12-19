@@ -14,6 +14,12 @@ _start:
 # li a7, uvm32_syscall_stackprotect
 # ecall
 
+# Write 0xAA to mvtec via CSR (assume CSR address 0x7C0)
+# Requires Zicsr (for csrw) and Zifencei (for fence.i)
+li t1, 0xAA
+csrw 0x305, t1      # Zicsr extension
+
+
 # sp is already setup by vm
 sw	ra,12(sp)
 jal	ra, main
