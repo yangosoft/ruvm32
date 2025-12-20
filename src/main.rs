@@ -2,6 +2,26 @@ use std::env;
 
 mod rv32ima;
 
+fn dump_state(rv32_iresisters: &rv32ima::RV32IRegisters) {
+    println!("PC: {:08x}", rv32_iresisters.pc);
+    for i in 0..32 {
+        println!("x{:02}: {:08x}", i, rv32_iresisters.regs[i]);
+    }
+    println!("mstatus:   {:08x}", rv32_iresisters.mstatus);
+    println!("mtvec:     {:08x}", rv32_iresisters.mtvec);
+    println!("mie:       {:08x}", rv32_iresisters.mie);
+    println!("mip:       {:08x}", rv32_iresisters.mip);
+    println!("mepc:      {:08x}", rv32_iresisters.mepc);
+    println!("mtval:     {:08x}", rv32_iresisters.mtval);
+    println!("mcause:    {:08x}", rv32_iresisters.mcause);
+    println!("mscratch:  {:08x}", rv32_iresisters.mscratch);
+    println!("extraflags:{:08x}", rv32_iresisters.extraflags);
+}
+
+fn callback_on_trap(trap: u32) {
+    println!("Trap occurred with code {:08x}", trap);
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let path: String;
@@ -15,7 +35,7 @@ fn main() {
 
     let rom = std::fs::read(path).expect("Failed to read ROM file");
 
-    let mut cpu = rv32ima::MiniRV32IMAState::new();
+    let mut cpu = rv32ima::MiniRV32IMAState::new(Some(callback_on_trap));
 
     let mut memory: Vec<u8> = vec![0; rv32ima::UVM32_MEMORY_SIZE as usize];
     memory[0..rom.len()].copy_from_slice(&rom);
@@ -76,6 +96,7 @@ fn main() {
                     }
                     _ => {
                         println!("Unknown SYSCALL {:08x} at PC={:08x}", syscall, cpu.get_pc());
+                        dump_state(&cpu.get_state());
                         let mvtec = cpu.get_mvtec();
                         cpu.set_mcause(11); // ecall from M-mode
                         println!("Jumping to mtvec = {:08x}", mvtec);

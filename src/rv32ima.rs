@@ -68,6 +68,26 @@ fn minirv32_store4(ofs: u32, val: u32, image: &mut [u8]) {
     image[offset + 3] = ((val >> 24) & 0xff) as u8;
 }
 
+pub struct RV32IRegisters {
+    pub regs: [u32; 32],
+    pub pc: u32,
+    pub mstatus: u32,
+
+    pub mscratch: u32,
+    pub mtvec: u32,
+    pub mie: u32,
+    pub mip: u32,
+    pub mepc: u32,
+    pub mtval: u32,
+    pub mcause: u32,
+
+    // Note: only a few bits are used.  (Machine = 3, User = 0)
+    // Bits 0..1 = privilege.
+    // Bit 2 = WFI (Wait for interrupt)
+    // Bit 3+ = Load/Store reservation LSBs.
+    pub extraflags: u32,
+}
+
 #[derive(Clone, Default, Copy)]
 pub struct MiniRV32IMAState {
     regs: [u32; 32],
@@ -87,10 +107,11 @@ pub struct MiniRV32IMAState {
     // Bit 2 = WFI (Wait for interrupt)
     // Bit 3+ = Load/Store reservation LSBs.
     extraflags: u32,
+    callback_on_trap: Option<fn(u32)>,
 }
 
 impl MiniRV32IMAState {
-    pub fn new() -> Self {
+    pub fn new(callback_on_trap: Option<fn(u32)>) -> Self {
         let mut me = Self {
             regs: [0; 32],
             pc: MINIRV32_RAM_IMAGE_OFFSET,
@@ -103,6 +124,7 @@ impl MiniRV32IMAState {
             mtval: 0,
             mcause: 0,
             extraflags: 3,
+            callback_on_trap,
         };
 
         // https://projectf.io/posts/riscv-cheat-sheet/
@@ -110,7 +132,24 @@ impl MiniRV32IMAState {
         // la	sp, _sstack
         // addi	sp,sp,-16
         me.regs[2] = ((MINIRV32_RAM_IMAGE_OFFSET + UVM32_MEMORY_SIZE) & !0xF) - 16; // 16 byte align stack
+        me.callback_on_trap = callback_on_trap;
         return me;
+    }
+
+    pub fn get_state(&self) -> RV32IRegisters {
+        RV32IRegisters {
+            regs: self.regs,
+            pc: self.pc,
+            mstatus: self.mstatus,
+            mscratch: self.mscratch,
+            mtvec: self.mtvec,
+            mie: self.mie,
+            mip: self.mip,
+            mepc: self.mepc,
+            mtval: self.mtval,
+            mcause: self.mcause,
+            extraflags: self.extraflags,
+        }
     }
 
     pub fn get_reg(&self, regnum: usize) -> u32 {
@@ -141,7 +180,7 @@ impl MiniRV32IMAState {
         let mut trap: u32 = 0;
         let mut rval: u32;
         let mut pc: u32 = self.pc;
-
+        rval = 0;
         for _icount in 0..count {
             let ir: u32;
             rval = 0;
@@ -653,8 +692,13 @@ impl MiniRV32IMAState {
         }
 
         if trap != 0 {
-            return trap.try_into().unwrap();
-            /*if trap & 0x80000000 != 0 {
+            // callback to notify trap
+            if let Some(callback) = self.callback_on_trap {
+                callback(trap);
+            }
+
+            //return trap.try_into().unwrap();
+            if trap & 0x80000000 != 0 {
                 self.mcause = trap;
                 self.mtval = 0;
                 pc += 4; // PC needs to point to where the PC will return to.
@@ -667,12 +711,12 @@ impl MiniRV32IMAState {
             //CSR( mstatus ) & 8 = MIE, & 0x80 = MPIE
             // On an interrupt, the system moves current MIE into MPIE
             self.mstatus = ((self.mstatus & 0x08) << 4) | ((self.extraflags & 3) << 11);
-            pc = (self.mtvec - 4);
+            pc = self.mtvec - 4;
 
             // If trapping, always enter machine mode.
             self.extraflags |= 3;
             trap = 0;
-            pc += 4;*/
+            pc += 4;
         }
 
         self.pc = pc;

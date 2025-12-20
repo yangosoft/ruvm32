@@ -39,10 +39,10 @@ static void exampleTask( void * parameters )
     {
         /* Example Task Code */
         //vTaskDelay( 100 ); /* delay 100 ticks */
-        __asm__ volatile (
+        /*__asm__ volatile (
             "li a7, 64\n\t"   // llamada al sistema 64, write
             "ecall\n\t"
-        );
+        );*/
         taskYIELD();
     }
 }
@@ -56,10 +56,10 @@ static void exampleTask2( void * parameters )
     {
         /* Example Task Code */
         //vTaskDelay( 100 ); /* delay 100 ticks */
-        __asm__ volatile (
+        /*__asm__ volatile (
             "li a7, 65\n\t"   // llamada al sistema 64, write
             "ecall\n\t"
-        );
+        );*/
         taskYIELD();
     }
 }
