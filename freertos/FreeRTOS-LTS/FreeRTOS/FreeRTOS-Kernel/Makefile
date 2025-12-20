@@ -9,16 +9,17 @@ LIBS:= -lgcc # needed for softfp
 # rv32imc_zicsr
 
 PROJECT:=test1
-SRCS:=test1.c crt0.S \
-	croutine.c \
-	event_groups.c\
-	list.c\
-	queue.c\
-	tasks.c\
-	timers.c\
-	string.c\
-	portable/GCC/RISC-V/portASM.S \
-	portable/GCC/RISC-V/port.c
+SRCS:= 	portable/GCC/RISC-V/portASM.S \
+		portable/GCC/RISC-V/port.c \
+		crt0.S \
+		croutine.c \
+		event_groups.c\
+		list.c\
+		queue.c\
+		tasks.c\
+		timers.c\
+		string.c\
+		test1.c 	
 
 # check if the compiler is installed
 UNAME_S := $(shell uname -s)

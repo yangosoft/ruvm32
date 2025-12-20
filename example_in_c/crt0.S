@@ -29,3 +29,6 @@ ecall
 
 .section .data
 
+/* Macro to handle interrupts: expands to external_interrupt_handler(uint32_t cause) */
+#define portasmHANDLE_INTERRUPT external_interrupt_handler
+

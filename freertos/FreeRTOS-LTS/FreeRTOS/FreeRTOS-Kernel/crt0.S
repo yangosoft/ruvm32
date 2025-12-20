@@ -16,7 +16,7 @@ _start:
 
 # TODO change 0xAA for the rigth address of the PC 
 # 0x305 writes into mvtec
-li t1, 0xAA
+la t1, external_interrupt_handler
 csrw 0x305, t1      # Zicsr extension
 
 # sp is already setup by vm
@@ -25,6 +25,14 @@ jal	ra, main
 
 li a7, uvm32_syscall_halt
 ecall
+
+.section .text
+.global external_interrupt_handler
+.type external_interrupt_handler, @function
+external_interrupt_handler:
+    # a0 contains the 'cause' argument
+    call freertos_risc_v_trap_handler
+    ret
 
 .section .data
 

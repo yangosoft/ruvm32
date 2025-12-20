@@ -6,9 +6,9 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let path: String;
     if args.len() < 2 {
-        //path = "/home/yango/proj/ruvm32/freertos/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/test1.bin"
-        //    .to_string()
-        path = "/home/yango/proj/ruvm32/example_in_c/test1.bin".to_string()
+        path = "/home/yango/proj/ruvm32/freertos/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/test1.bin"
+            .to_string()
+        //path = "/home/yango/proj/ruvm32/example_in_c/test1.bin".to_string()
     } else {
         path = args[1].clone();
     }
@@ -65,10 +65,23 @@ fn main() {
                         cpu.increment_pc(4);
                         //break;
                     }
+                    67 => {
+                        println!(
+                            "Timer setup called {:08x} at PC={:08x}",
+                            syscall,
+                            cpu.get_pc()
+                        );
+                        cpu.increment_pc(4);
+                        //break;
+                    }
                     _ => {
                         println!("Unknown SYSCALL {:08x} at PC={:08x}", syscall, cpu.get_pc());
-                        cpu.increment_pc(4);
-                        break;
+                        let mvtec = cpu.get_mvtec();
+                        cpu.set_mcause(11); // ecall from M-mode
+                        println!("Jumping to mtvec = {:08x}", mvtec);
+                        cpu.set_pc(mvtec);
+
+                        //break;
                     }
                 }
             }

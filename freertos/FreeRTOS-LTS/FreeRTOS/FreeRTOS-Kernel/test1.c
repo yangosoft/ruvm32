@@ -10,21 +10,18 @@
 
 
 void vPortSetupTimerInterrupt(void);
-void external_interrupt_handler( uint32_t cause );
 
 
 void vPortSetupTimerInterrupt()
 {
     // not implemented
-}
-
-void external_interrupt_handler( uint32_t cause )
-{
-     __asm__ volatile (
-            "li a7, 66\n\t"   // llamada al sistema 64, write
+    __asm__ volatile (
+            "li a7, 67\n\t"   // llamada al sistema 64, write
             "ecall\n\t"
         );
 }
+
+
 
 /*-----------------------------------------------------------*/
 

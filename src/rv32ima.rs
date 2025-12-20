@@ -121,6 +121,14 @@ impl MiniRV32IMAState {
         self.pc
     }
 
+    pub fn set_pc(&mut self, new_pc: u32) {
+        self.pc = new_pc;
+    }
+
+    pub fn set_mcause(&mut self, new_mcause: u32) {
+        self.mcause = new_mcause;
+    }
+
     pub fn get_mvtec(&self) -> u32 {
         self.mtvec
     }
@@ -138,7 +146,7 @@ impl MiniRV32IMAState {
             let ir: u32;
             rval = 0;
 
-            let ofs_pc: u32 = pc - MINIRV32_RAM_IMAGE_OFFSET;
+            let ofs_pc: u32 = pc.wrapping_sub(MINIRV32_RAM_IMAGE_OFFSET);
 
             if ofs_pc >= MINI_RV32_RAM_SIZE {
                 trap = 1 + 1; // Handle access violation on instruction read.
